@@ -18,8 +18,13 @@ typedef struct {
     const char *ip;
     char *param1;
     char *param2;
+    struct message *mes;
 } ThreadArgs;
 
+struct message{
+    int port;  // 0 1 2  10Gb FC SRIO
+    int signal; // 0 1 2 3 4 5  LD SAR IR RS SPEECH multi
+};
 
 void *connect_to_server(void *args) {
 
@@ -61,12 +66,17 @@ void *connect_to_server(void *args) {
        printf("\nStart B_DEV Trans Data\n");
     }
 
-    const char *sth = "10Gb"; // 要传递的字符串
+    //const char *sth = "10Gb"; // 要传递的字符串
     char buffer[1024] = {0};
     int sockB, sockC;
 
-    sth = threadArgs->param1;
-    send(sock, sth, strlen(sth), 0);
+    struct message *sth = (struct message *)buffer;
+    
+    sth->port = threadArgs->mes->port;
+    sth->signal = threadArgs->mes->signal;
+   
+    send(sock, sth, sizeof(sth), 0);
+   
     printf("\nString sent to %s_dev\n", threadArgs->param2);
 
     // 等待确认消息
@@ -90,11 +100,46 @@ int main(int argc, char *argv[]) {
         printf("Signal only <LD/SAR/IR/RS/SPEECH/multi>\n");
         return 1;
     }
+
+
+    char buffer[1024] = {0};
+    struct message *mes = (struct message *)buffer;
+
+    if(strncmp(argv[1], "10Gb", 2) == 0){
+        mes->port = 0;
+    }else if(strncmp(argv[1], "FC", 2) == 0){
+        mes->port = 1;
+    }else if(strncmp(argv[1], "SRIO", 2) == 0){
+        mes->port = 2;
+    }else{
+        printf("Error: wrong port type \n");
+        exit(-1);
+    }
+
+    if(strncmp(argv[2], "LD", 2) == 0){
+        mes->signal = 0;
+    }else if(strncmp(argv[2], "SAR", 2) == 0){
+        mes->signal = 1;
+    }else if(strncmp(argv[2], "IR", 2) == 0){
+        mes->signal = 2;
+    }else if(strncmp(argv[2], "RS", 2) == 0){
+        mes->signal = 3;
+    }else if(strncmp(argv[2], "SPEECH", 4) == 0){
+        mes->signal = 4;
+    }else if(strncmp(argv[2], "multi", 4) == 0){
+        mes->signal = 5;
+    }else{
+        printf("Error: wrong signal type \n");
+        exit(-1);
+    }
+
+
     pthread_t threadB, threadA;
     //struct ThreadArgs argsB, argsC;
     //
-    ThreadArgs argsA = {"ip2", "10Gb", "A"}; // 参数1和参数2是示例数据
-    ThreadArgs argsB = {"ip3", "10Gb", "B"};
+
+    ThreadArgs argsA = {"ip2", "10Gb", "A", mes}; // 参数1和参数2是示例数据
+    ThreadArgs argsB = {"ip3", "10Gb", "B", mes};
     
     argsA.ip = STORAGE_IP1;
     argsA.param1 = argv[1];
