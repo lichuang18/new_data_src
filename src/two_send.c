@@ -80,10 +80,10 @@ void *connect_to_server(void *args) {
     printf("\nString sent to %s_dev\n", threadArgs->param2);
 
     // 等待确认消息
-    read(sock, buffer, 1024);
-    if (strcmp(buffer, "received") == 0) {
-        printf("\n%s_dev 成功\n", threadArgs->param2);
-    }
+    //read(sock, buffer, 1024);
+    //if (strcmp(buffer, "received") == 0) {
+    //    printf("\n%s_dev 成功\n", threadArgs->param2);
+    //}
 
     close(sock);
 
