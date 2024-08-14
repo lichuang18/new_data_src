@@ -19,6 +19,7 @@ typedef struct {
     char *param1;
     char *param2;
     struct message *mes;
+    double run_time;
 } ThreadArgs;
 
 struct message{
@@ -85,6 +86,19 @@ void *connect_to_server(void *args) {
     //    printf("\n%s_dev 成功\n", threadArgs->param2);
     //}
 
+    double time2 = threadArgs->run_time;
+    if(execution_time <= time2)
+    {
+            int sum=0;
+            sum = (int)(((double)time2 - execution_time)*1000000);
+            usleep(sum);
+    }
+
+    gettimeofday(&end1, NULL);
+    execution_time = (end1.tv_sec - start.tv_sec) + (end1.tv_usec - start.tv_usec) / 1000000.0;
+    printf("Trans Time %s_dev , %fs\n",threadArgs->param2,execution_time);
+
+
     close(sock);
 
 }
@@ -138,16 +152,19 @@ int main(int argc, char *argv[]) {
     //struct ThreadArgs argsB, argsC;
     //
 
-    ThreadArgs argsA = {"ip2", "10Gb", "A", mes}; // 参数1和参数2是示例数据
-    ThreadArgs argsB = {"ip3", "10Gb", "B", mes};
+    ThreadArgs argsA = {"ip2", "10Gb", "A", mes, 30}; // 参数1和参数2是示例数据
+    ThreadArgs argsB = {"ip3", "10Gb", "B", mes, 30};
     
     argsA.ip = STORAGE_IP1;
     argsA.param1 = argv[1];
     argsA.param2 = "A";
+    argsA.run_time = (double)atoi(argv[3]);
+
 
     argsB.ip = STORAGE_IP2;
     argsB.param1 = argv[1];
     argsB.param2 = "B";
+    argsB.run_time = (double)atoi(argv[3]);
     // 启动连接到B机器的线程
     if(pthread_create(&threadA, NULL, connect_to_server, &argsA) != 0) {
         perror("Failed to create thread for B");
