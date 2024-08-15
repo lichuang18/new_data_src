@@ -4,4 +4,4 @@ all:
 	gcc src/md5sum.c -o md5sum
 
 clean: 
-	rm send two_send md5sum
+	rm -f two_send md5sum

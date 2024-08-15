@@ -5,7 +5,7 @@
 #include <unistd.h>  // 包含 realpath 函数
 
 #define MD5_DIGEST_LENGTH 16
-#define STORAGE_IP "10.0.50.4"
+#define STORAGE_IP "10.0.50.14"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -63,10 +63,10 @@ int main(int argc, char *argv[]) {
     // 检查文件是否位于 /mnt 目录下
     if (strncmp(resolved_path, "/mnt", 4) == 0) {
 	char command[200];
-        sprintf(command, "sshpass -p 1 ssh %s 'md5sum /mnt/pool1/fs1/%s/%s 2>/dev/null'",storage_ip, strrr, str);
+        sprintf(command, "sshpass -p @cetc52. ssh %s 'md5sum /mnt/pool1/fs1/10Gb/%s 2>/dev/null'",storage_ip, str);
         //sprintf(command, "sshpass -p 1 ssh %s 'md5sum /root/new_jsj/10Gb/%s 2>/dev/null'",storage_ip, str);
+	//printf("comand : %s  path-str: %s  -1 dir :%s\n",command, str, strrr);
 	system(command);
-	//printf("comand : %s  path-str : %s\n",command, str);
 	return 0;
     }else{
     	char command[1024] = "old_md5sum";
