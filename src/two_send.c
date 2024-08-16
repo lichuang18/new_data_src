@@ -47,7 +47,7 @@ void *connect_to_server(void *args) {
 	return NULL;
     }
 
-    struct timeval start, end, end1;
+    struct timeval start, end, end1, start1;
     gettimeofday(&start, NULL);
     gettimeofday(&end, NULL);
     double execution_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
@@ -61,6 +61,7 @@ void *connect_to_server(void *args) {
 	 printf("\n%s_dev recv timeout\n",threadArgs->param2);
 	 return NULL;
     }
+    gettimeofday(&start1, NULL);
     // 发送字符串
     if(threadArgs->ip == STORAGE_IP1){
        printf("\nConnect A_DEV Trans Data\n");
@@ -87,6 +88,11 @@ void *connect_to_server(void *args) {
     //    printf("\n%s_dev 成功\n", threadArgs->param2);
     //}
 
+    gettimeofday(&end1, NULL);
+    execution_time = (end1.tv_sec - start1.tv_sec) + (end1.tv_usec - start1.tv_usec) / 1000000.0;
+    
+    //printf("hello mk , executime %f\n",execution_time);
+    
     double time2 = threadArgs->run_time;
     if(execution_time <= time2)
     {
@@ -96,7 +102,7 @@ void *connect_to_server(void *args) {
     }
 
     gettimeofday(&end1, NULL);
-    execution_time = (end1.tv_sec - start.tv_sec) + (end1.tv_usec - start.tv_usec) / 1000000.0;
+    execution_time = (end1.tv_sec - start1.tv_sec) + (end1.tv_usec - start1.tv_usec) / 1000000.0;
     printf("Trans Time %s_dev , %fs\n",threadArgs->param2,execution_time);
 
 
@@ -123,7 +129,7 @@ void *connect_to_parse(void *args) {
         return NULL;
     }
 
-    struct timeval start, end, end1;
+    struct timeval start, end, end1, start1;
     gettimeofday(&start, NULL);
     gettimeofday(&end, NULL);
     double execution_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
@@ -137,6 +143,8 @@ void *connect_to_parse(void *args) {
          printf("\n%s_dev data_parse recv timeout\n",threadArgs->param2);
          return NULL;
     }
+
+    gettimeofday(&start1, NULL);
     // 发送字符串
     if(threadArgs->ip == STORAGE_IP1){
        printf("\nConnect A_DEV Data Parse\n");
@@ -157,6 +165,10 @@ void *connect_to_parse(void *args) {
     printf("\nString sent to %s_dev for data_parse\n", threadArgs->param2);
     double time2 = threadArgs->run_time;
 
+    gettimeofday(&end1, NULL);
+    execution_time = (end1.tv_sec - start1.tv_sec) + (end1.tv_usec - start1.tv_usec) / 1000000.0;
+
+    //printf("hello mk , executime %f\n",execution_time);
 
 
     if(execution_time <= time2)
