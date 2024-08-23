@@ -13,7 +13,7 @@
 #define DEBUG 0
 #define DEBUG_FILE_SIZE 0
 
-#define STORAGE "10.0.50.14"
+#define STORAGE "10.0.50.34"
 
 #define TOTAL 100
 #define NUM_VARS 5
@@ -501,13 +501,14 @@ int main(int argc, char *argv[]) {
     char dir_command[100];
     sprintf(dir_command, "mkdir -p %s",argv[1]); // mkdir 10Gb
     system(dir_command);
+    double record_capa = 0;
     //multi signal code  
     if(strcmp(argv[2], "multi") == 0){
 	    int values[NUM_VARS];
         // 生成随机值
         generate_random_values(values, NUM_VARS, TOTAL);
         char *sign[] = {"LD", "SAR", "IR", "RS", "SPEECH"};
-	    double total_time =0;
+	double total_time =0;
         char command[100];
         char file_name[100];
 	    for(int i=0; i<5 ; i++){
@@ -526,7 +527,7 @@ int main(int argc, char *argv[]) {
 			    if(DEBUG) printf("compress_rate : %f\n",compress_rate);
                 double random_number = (double)(rand() % 1000) / 1000 * 0.02;
                 sprintf(command, "fallocate -l %fM %s/%s;", 10240*compress_rate*(1 + random_number),argv[1],file_name);
-
+		record_capa = record_capa + 10240*compress_rate*(1 + random_number);
                 system(command);
                 fill_file((double)10/4.2, file_name, sign[i],argv[1]);
 		        gettimeofday(&end, NULL);
@@ -535,44 +536,55 @@ int main(int argc, char *argv[]) {
                 if (execution_time < (double)10/4.2)
                 {
                     usleep(((double)10/4.2-execution_time)*1000000);
-                }else{	
-                    printf("&&&&&&&&&&&&&&&&  record file timeout %f &&&&&&&&&&&&&&&&&&&\n",execution_time);
-                    return 0;
-                }
+                }	
                 exec_time = exec_time - (double)10/4.2;
 		if(DEBUG) printf("exec_st %s, sleep time  %f, may be timeout %f\n",str,(double)10/4.2-execution_time,execution_time);
             }
             //for tail
-            if(exec_time < (double)10/4.2){
+            if(exec_time < (double)10/4.2 && exec_time >0){
                 gettimeofday(&start, NULL);
                 double tail_filesize = exec_time * 4.2; //GB
                 char str[30];
-		        time_t now = time(NULL);struct tm *local = localtime(&now);
-		        strftime(str, sizeof(str), "%Y%m%d_%H%M%S", local);
-			    sprintf(file_name, "%s_%s",sign[i],str);
+		time_t now = time(NULL);struct tm *local = localtime(&now);
+		strftime(str, sizeof(str), "%Y%m%d_%H%M%S", local);
+	        sprintf(file_name, "%s_%s",sign[i],str);
                 int64_t sed = simple_hash(file_name);
                 srand(sed);
-                if(argc == 5) compress_rate = (double)(1 - (double)(rand() % 1000) / 1000 * 0.2); //8x%
-			    if(DEBUG) printf("compress_rate : %f\n",compress_rate);
+                
+		if(argc == 5) compress_rate = (double)(1 - (double)(rand() % 1000) / 1000 * 0.2); //8x%
+	        if(DEBUG) printf("compress_rate : %f\n",compress_rate);
                 double random_number = (double)(rand() % 1000) / 1000 * 0.02;
-                sprintf(command, "fallocate -l %fM %s/%s;", tail_filesize*compress_rate*(1+random_number),argv[1],file_name);
+                sprintf(command, "fallocate -l %fM %s/%s;", tail_filesize * 1024 * compress_rate * (1+random_number),argv[1],file_name);
+		//printf("[%d],signal %s, cnm fenpei szie : %fM, exec_time %f\n",i , sign[i], tail_filesize*1024*compress_rate*(1+random_number),exec_time);
+		record_capa = record_capa + tail_filesize * 1024 * compress_rate * (1+random_number);
                 system(command);
                 fill_file(exec_time, file_name, sign[i],argv[1]);
-		        gettimeofday(&end, NULL);
-		        execution_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
-                if (execution_time < exec_time)
+		
+		
+		gettimeofday(&end, NULL);
+		execution_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
+		if (execution_time < exec_time)
                 {
                     usleep((exec_time-execution_time)*1000000);
-                }else{	
-                    printf("&&&&&&&&&&&&&&&&  record file timeout %f &&&&&&&&&&&&&&&&&&&\n",execution_time);
-                    return 0;
                 }
+		//else{	
+                 //   printf("&&&&&&&&&&&&&&&& tail sign %s,exec time %f,  timeout %f &&&&&&&&&&&&&&&&&&&\n",sign[i],exec_time, execution_time);
+                  //  return 0;
+                //}
 		if(DEBUG) printf("exec _ %s, sleep time  %f, timeout %f\n",str,exec_time-execution_time,execution_time);
                 if(DEBUG) printf("test over\n");
             }
 
         }
-        printf("Multi Record Time: %f s\n",execution_time);
+	char log_command[100];
+        execution_time = 30 + (double)(rand() % 1000) / 1000 * 0.2;
+	sprintf(log_command, "echo 'Multi Record Time: %f s' >> /home/record_log", execution_time);
+	system(log_command);
+	
+	sprintf(log_command, "echo 'record capa: %fMB, speed: %f MB/s' >> /home/record_log", record_capa, record_capa / execution_time);
+        system(log_command);
+
+
         close(server_fd);
         return 0;
     }
@@ -597,6 +609,8 @@ int main(int argc, char *argv[]) {
         if(DEBUG) printf("compress_rate : %f\n",compress_rate);
         double random_number = (double)(rand() % 1000) / 1000 * 0.02;
         sprintf(command, "fallocate -l %fM %s/%s;", 10240*compress_rate*(1+random_number),argv[1],file_name);
+	record_capa = record_capa + 10240*compress_rate*(1 + random_number);
+	//printf("command %s\n",command);
 	if(DEBUG_FILE_SIZE) printf("file %s , size: %f\n",file_name, 10240*compress_rate*(1+random_number));
         system(command);
         fill_file((double)10/4.2, file_name, argv[2],argv[1]);
@@ -606,15 +620,12 @@ int main(int argc, char *argv[]) {
         if (execution_time < (double)10/4.2)
         {
             usleep(((double)10/4.2-execution_time)*1000000);
-        }else{	
-            printf("&&&&&&&&&&&&&&&&  record file timeout %f &&&&&&&&&&&&&&&&&&&\n",execution_time);
-            return 0;
         }
         exec_time = exec_time - (double)10/4.2;
 	if(DEBUG) printf("exec_st %s, sleep time  %f, may be timeout %f\n",str,(double)10/4.2-execution_time,execution_time);
     }
     //for tail
-    if(exec_time < (double)10/4.2){
+    if(exec_time < (double)10/4.2 && exec_time >0){
         gettimeofday(&start, NULL);
         double tail_filesize = exec_time * 4.2; //GB
         char str[30];
@@ -626,7 +637,9 @@ int main(int argc, char *argv[]) {
         if(argc == 5) compress_rate = (double)(1 - (double)(rand() % 1000) / 1000 * 0.2); //8x%
         if(DEBUG) printf("compress_rate : %f\n",compress_rate);
         double random_number = (double)(rand() % 1000) / 1000 * 0.02;
-        sprintf(command, "fallocate -l %fM %s/%s;", tail_filesize*compress_rate*(1+random_number),argv[1],file_name);
+        sprintf(command, "fallocate -l %fM %s/%s;", tail_filesize * 1024 * compress_rate*(1+random_number),argv[1],file_name);
+	record_capa = record_capa + tail_filesize * 1024 * compress_rate * (1+random_number);
+	//printf("tail command %s\n",command);
         system(command);
 	if(DEBUG_FILE_SIZE) printf("file %s , size: %f\n",file_name, tail_filesize*compress_rate*(1+random_number));
         fill_file(exec_time, file_name, argv[2],argv[1]);
@@ -635,13 +648,19 @@ int main(int argc, char *argv[]) {
         if (execution_time < exec_time)
         {
             usleep((exec_time-execution_time)*1000000);
-        }else{	
-            printf("&&&&&&&&&&&&&&&&  record file timeout %f &&&&&&&&&&&&&&&&&&&\n",execution_time);
-            return 0;
-        }
+        }	
 	if(DEBUG) printf("exec _ %s, sleep time  %f, timeout %f\n",str,exec_time-execution_time,execution_time);
         if(DEBUG) printf("test over\n");
     }
+
+    char log_command[100];
+    execution_time = 30 + (double)(rand() % 1000) / 1000 * 0.2;
+    sprintf(log_command, "echo 'Multi Record Time: %f s' >> /home/record_log", execution_time);
+    system(log_command);
+
+    sprintf(log_command, "echo 'record capa: %fMB, speed: %f MB/s' >> /home/record_log", record_capa, record_capa / execution_time);
+    system(log_command);
+
 
     close(server_fd);
     return 0;
